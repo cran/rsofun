@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Josefa Arán" />
+
+
+<title>Parameter calibration and cost functions</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Parameter calibration and cost
+functions</h1>
+<h4 class="author">Josefa Arán</h4>
+
+
+
+<p>The <code>rsofun</code> package allows to calibrate parameters of the
+<code>pmodel</code> and <code>biomee</code> models via the
+<code>calib_sofun()</code> function. The implementation of the
+calibration is fairly flexible and can be adapted to a specific use-case
+via a cost function (used as metrics for the optimization routines in
+<code>calib_sofun()</code>). The package provides a set of standard cost
+functions named <code>cost_*</code>, which can be used for a variety of
+calibrations (different sets of model parameters, using various target
+variables, etc.). Alternatively, it’s possible to write a more specific
+new cost function to be used together with
+<code>calib_sofun()</code>.</p>
+<p>In this vignette, we go over some examples on how to use the
+<code>rsofun</code> cost functions for parameter calibration and how to
+write your own custom one from scratch.</p>
+<div id="calibration-to-gpp-using-rmse-and-gensa-optimizer" class="section level3">
+<h3>Calibration to GPP using RMSE and GenSA optimizer</h3>
+<p>A simple approach to parameter calibration is to find the parameter
+values that lead to the best prediction performance, in terms of the
+RMSE (root mean squared error). The function
+<code>cost_rmse_pmodel()</code> runs the P-model internally to calculate
+the RMSE between predicted target values (in this case GPP) and the
+corresponding observations.</p>
+<p>The implementation of <code>cost_rmse_pmodel()</code> allows
+flexibility in various ways. We can simultaneously calibrate a subset of
+model parameters and also replicate the different calibration setups in
+Stocker et al., 2020 GMD. For example, following the <code>ORG</code>
+setup, only parameter <code>kphio</code> is calibrated. Furthermore, the
+standard cost functions allow to calibrate to several targets (fluxes
+and leaf traits predicted by the P-model) simultaneously and to
+parallelize the simulations. Since the P-model is run internally to make
+predictions, we must always specify which values the model parameters
+should take, i.e. the parameters that aren’t calibrated (via argument
+<code>par_fixed</code>).</p>
+<p>The syntax to run the calibration routine is as follows:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># Define calibration settings and parameter ranges from previous work</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>settings_rmse <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&#39;GenSA&#39;</span>,                   <span class="co"># minimizes the RMSE</span></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>  <span class="at">metric =</span> cost_rmse_pmodel,          <span class="co"># our cost function</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  <span class="at">control =</span> <span class="fu">list</span>(                     <span class="co"># control parameters for optimizer GenSA</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>    <span class="at">maxit =</span> <span class="dv">100</span>),                     </span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>  <span class="at">par =</span> <span class="fu">list</span>(                         <span class="co"># bounds for the parameter space</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>    <span class="at">kphio =</span> <span class="fu">list</span>(<span class="at">lower=</span><span class="fl">0.02</span>, <span class="at">upper=</span><span class="fl">0.2</span>, <span class="at">init=</span><span class="fl">0.05</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>  )</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>)</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co"># Calibrate the model and optimize the free parameters using</span></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co"># demo datasets</span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>pars_calib_rmse <span class="ot">&lt;-</span> <span class="fu">calib_sofun</span>(</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>  <span class="co"># calib_sofun arguments:</span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>  <span class="at">drivers =</span> p_model_drivers,  </span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>  <span class="at">obs =</span> p_model_validation,</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a>  <span class="at">settings =</span> settings_rmse,</span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a>  <span class="co"># extra arguments passed to the cost function:</span></span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a>  <span class="at">par_fixed =</span> <span class="fu">list</span>(         <span class="co"># fix all other parameters</span></span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a>    <span class="at">kphio_par_a        =</span> <span class="fl">0.0</span>,        <span class="co"># set to zero to disable temperature-dependence </span></span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a>                                     <span class="co"># of kphio, setup ORG</span></span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a>    <span class="at">kphio_par_b        =</span> <span class="fl">1.0</span>,</span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a>    <span class="at">soilm_thetastar    =</span> <span class="fl">0.6</span> <span class="sc">*</span> <span class="dv">240</span>,  <span class="co"># to recover paper setup with soil moisture stress</span></span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a>    <span class="at">soilm_betao        =</span> <span class="fl">0.0</span>,</span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a>    <span class="at">beta_unitcostratio =</span> <span class="fl">146.0</span>,</span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a>    <span class="at">rd_to_vcmax        =</span> <span class="fl">0.014</span>,      <span class="co"># value from Atkin et al. 2015 for C3 herbaceous</span></span>
+<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a>    <span class="at">tau_acclim         =</span> <span class="fl">30.0</span>,</span>
+<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a>    <span class="at">kc_jmax            =</span> <span class="fl">0.41</span></span>
+<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a>  ),</span>
+<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a>  <span class="at">targets =</span> <span class="st">&quot;gpp&quot;</span>           <span class="co"># define target variable GPP</span></span>
+<span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a>)</span></code></pre></div>
+<p>The output of <code>calib_sofun()</code> is a list containing the
+calibrated parameter values and the raw optimization output from the
+optimizer (here from <code>GenSA</code> or, as we see next, from
+<code>BayesianTools::runMCMC</code>).</p>
+</div>
+<div id="calibration-to-gpp-using-a-simple-likelihood-function-and-bayesiantools" class="section level3">
+<h3>Calibration to GPP using a simple likelihood function and
+BayesianTools</h3>
+<p>Let’s calibrate the parameters involved in the temperature dependency
+of the quantum yield efficiency, <code>kphio</code>,
+<code>kphio_par_a</code> and <code>kphio_par_b</code>, taking a Bayesian
+calibration approach. We assume that the target variable
+(<code>&#39;gpp&#39;</code>) follows a normal distribution centered at the
+observations and with its standard deviation being a new calibratable
+parameter (<code>&#39;err_gpp&#39;</code>). We also assume a uniform prior
+distribution for all calibratable parameters. By maximizing the normal
+log-likelihood, the MAP (maximum a posteriori) estimators for all 4
+parameters are computed. With the function
+<code>cost_likelihood_pmodel()</code>, we can easily perform this
+calibration, as follows:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Define calibration settings</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>settings_likelihood <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&#39;BayesianTools&#39;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">metric =</span> cost_likelihood_pmodel,            <span class="co"># our cost function</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">control =</span> <span class="fu">list</span>(                             <span class="co"># optimization control settings for </span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>    <span class="at">sampler =</span> <span class="st">&#39;DEzs&#39;</span>,                           <span class="co"># BayesianTools::runMCMC</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>    <span class="at">settings =</span> <span class="fu">list</span>(</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>      <span class="at">burnin =</span> <span class="dv">1500</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>      <span class="at">iterations =</span> <span class="dv">3000</span></span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>    )),</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>  <span class="at">par =</span> <span class="fu">list</span>(</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a>    <span class="at">kphio =</span> <span class="fu">list</span>(<span class="at">lower =</span> <span class="dv">0</span>, <span class="at">upper =</span> <span class="fl">0.2</span>, <span class="at">init =</span> <span class="fl">0.05</span>),</span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>    <span class="at">kphio_par_a =</span> <span class="fu">list</span>(<span class="at">lower =</span> <span class="sc">-</span><span class="fl">0.5</span>, <span class="at">upper =</span> <span class="fl">0.5</span>, <span class="at">init =</span> <span class="sc">-</span><span class="fl">0.1</span>),</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>    <span class="at">kphio_par_b =</span> <span class="fu">list</span>(<span class="at">lower =</span> <span class="dv">10</span>, <span class="at">upper =</span> <span class="dv">40</span>, <span class="at">init =</span><span class="dv">25</span>),</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>    <span class="at">err_gpp =</span> <span class="fu">list</span>(<span class="at">lower =</span> <span class="fl">0.1</span>, <span class="at">upper =</span> <span class="dv">4</span>, <span class="at">init =</span> <span class="fl">0.8</span>)</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>  )</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>)</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co"># Calibrate the model and optimize the free parameters using</span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co"># demo datasets</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>pars_calib_likelihood <span class="ot">&lt;-</span> <span class="fu">calib_sofun</span>(</span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>  <span class="co"># calib_sofun arguments:</span></span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>  <span class="at">drivers =</span> p_model_drivers,</span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a>  <span class="at">obs =</span> p_model_validation,</span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a>  <span class="at">settings =</span> settings_likelihood,</span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a>  <span class="co"># extra arguments passed ot the cost function:</span></span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a>  <span class="at">par_fixed =</span> <span class="fu">list</span>(         <span class="co"># fix all other parameters</span></span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a>    <span class="at">soilm_thetastar    =</span> <span class="fl">0.6</span> <span class="sc">*</span> <span class="dv">240</span>,  <span class="co"># to recover paper setup with soil moisture stress</span></span>
+<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a>    <span class="at">soilm_betao        =</span> <span class="fl">0.0</span>,</span>
+<span id="cb2-30"><a href="#cb2-30" tabindex="-1"></a>    <span class="at">beta_unitcostratio =</span> <span class="fl">146.0</span>,</span>
+<span id="cb2-31"><a href="#cb2-31" tabindex="-1"></a>    <span class="at">rd_to_vcmax        =</span> <span class="fl">0.014</span>,      <span class="co"># value from Atkin et al. 2015 for C3 herbaceous</span></span>
+<span id="cb2-32"><a href="#cb2-32" tabindex="-1"></a>    <span class="at">tau_acclim         =</span> <span class="fl">30.0</span>,</span>
+<span id="cb2-33"><a href="#cb2-33" tabindex="-1"></a>    <span class="at">kc_jmax            =</span> <span class="fl">0.41</span></span>
+<span id="cb2-34"><a href="#cb2-34" tabindex="-1"></a>  ),</span>
+<span id="cb2-35"><a href="#cb2-35" tabindex="-1"></a>  <span class="at">targets =</span> <span class="st">&quot;gpp&quot;</span></span>
+<span id="cb2-36"><a href="#cb2-36" tabindex="-1"></a>)</span></code></pre></div>
+<p>Furthermore, there are equivalent cost functions available for the
+BiomeE model. Check out the reference pages for more details on how to
+use <code>cost_likelihood_biomee()</code> and
+<code>cost_rmse_biomee()</code>.</p>
+</div>
+<div id="calibration-to-gpp-and-vcmax25-using-the-joint-log-likelihood-and-bayesiantools" class="section level3">
+<h3>Calibration to GPP and Vcmax25 using the joint log-likelihood and
+BayesianTools</h3>
+<p>You may be interested in calibrating the model to different target
+variables simultaneously, like flux and leaf trait measurements. Here we
+present an example, where we use <code>cost_likelihood_pmodel()</code>
+to compute the joint normal likelihood of all the targets specified
+(that is, by summing the log-likelihoods of GPP and Vcmax25) and
+ultimately calibrate the <code>kc_jmax</code> parameter. It would be
+possible to follow this workflow for several-target calibration also
+with RMSE as the optimization metric, using
+<code>cost_rmse_pmodel()</code> and <code>GenSA</code> optimization.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Define calibration settings for two targets</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>settings_joint_likelihood <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&quot;BayesianTools&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">metric =</span> cost_likelihood_pmodel,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">control =</span> <span class="fu">list</span>(</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>    <span class="at">sampler =</span> <span class="st">&quot;DEzs&quot;</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>    <span class="at">settings =</span> <span class="fu">list</span>(</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>      <span class="at">burnin =</span> <span class="dv">1500</span>,             <span class="co"># kept artificially low</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>      <span class="at">iterations =</span> <span class="dv">3000</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>    )),</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>  <span class="at">par =</span> <span class="fu">list</span>(<span class="at">kc_jmax =</span> <span class="fu">list</span>(<span class="at">lower =</span> <span class="fl">0.2</span>, <span class="at">upper =</span> <span class="fl">0.8</span>, <span class="at">init =</span> <span class="fl">0.41</span>),  <span class="co"># uniform priors</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>             <span class="at">err_gpp =</span> <span class="fu">list</span>(<span class="at">lower =</span> <span class="fl">0.001</span>, <span class="at">upper =</span> <span class="dv">4</span>, <span class="at">init =</span> <span class="dv">1</span>),</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>             <span class="at">err_vcmax25 =</span> <span class="fu">list</span>(<span class="at">lower =</span> <span class="fl">0.000001</span>, <span class="at">upper =</span> <span class="fl">0.0001</span>, <span class="at">init =</span> <span class="fl">0.00001</span>))</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>)</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co"># Run the calibration on the concatenated data</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>par_calib_join <span class="ot">&lt;-</span> <span class="fu">calib_sofun</span>(</span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>  <span class="at">drivers =</span> <span class="fu">rbind</span>(p_model_drivers,</span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>                  p_model_drivers_vcmax25), </span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>  <span class="at">obs =</span> <span class="fu">rbind</span>(p_model_validation,</span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>              p_model_validation_vcmax25), </span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  <span class="at">settings =</span> settings_joint_likelihood,</span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  <span class="co"># arguments for the cost function</span></span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>  <span class="at">par_fixed =</span> <span class="fu">list</span>(         <span class="co"># fix parameter value from previous calibration</span></span>
+<span id="cb3-25"><a href="#cb3-25" tabindex="-1"></a>    <span class="at">kphio              =</span> <span class="fl">0.041</span>,</span>
+<span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a>    <span class="at">kphio_par_a        =</span> <span class="fl">0.0</span>,</span>
+<span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a>    <span class="at">kphio_par_b        =</span> <span class="dv">16</span>,</span>
+<span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a>    <span class="at">soilm_thetastar    =</span> <span class="fl">0.6</span> <span class="sc">*</span> <span class="dv">240</span>,  <span class="co"># to recover paper setup with soil moisture stress</span></span>
+<span id="cb3-29"><a href="#cb3-29" tabindex="-1"></a>    <span class="at">soilm_betao        =</span> <span class="fl">0.0</span>,</span>
+<span id="cb3-30"><a href="#cb3-30" tabindex="-1"></a>    <span class="at">beta_unitcostratio =</span> <span class="fl">146.0</span>,</span>
+<span id="cb3-31"><a href="#cb3-31" tabindex="-1"></a>    <span class="at">rd_to_vcmax        =</span> <span class="fl">0.014</span>,      <span class="co"># value from Atkin et al. 2015 for C3 herbaceous</span></span>
+<span id="cb3-32"><a href="#cb3-32" tabindex="-1"></a>    <span class="at">tau_acclim         =</span> <span class="fl">30.0</span></span>
+<span id="cb3-33"><a href="#cb3-33" tabindex="-1"></a>  ),    </span>
+<span id="cb3-34"><a href="#cb3-34" tabindex="-1"></a>  <span class="at">targets =</span> <span class="fu">c</span>(<span class="st">&#39;gpp&#39;</span>, <span class="st">&#39;vcmax25&#39;</span>)</span>
+<span id="cb3-35"><a href="#cb3-35" tabindex="-1"></a>)</span></code></pre></div>
+<p>Note that GPP predictions are directly compared to GPP observations
+on that day, but Vcmax25 predicted by the P-model (being a leaf trait)
+is averaged over the growing season and compared to a single Vcmax25
+observation taken per site. The cost functions provided in the package
+tell apart fluxes and leaf traits by the presence of a
+<code>&quot;date&quot;</code> column in the nested validation data frames
+<code>p_model_validation</code> and
+<code>p_model_validation_vcmax25</code>.</p>
+</div>
+<div id="write-your-custom-cost-function" class="section level3">
+<h3>Write your custom cost function</h3>
+<p>If the RMSE or normal log-likelihood (for one or several targets)
+cost functions that we provide do not fit your use case, you can easily
+write a custom one. In this section, we drive you through the main ideas
+with an example.</p>
+<p>All cost functions must take at least three arguments:</p>
+<ul>
+<li><p><code>par</code>: A vector of calibratable model parameters. In
+each iteration of the optimization, a new set of values of
+<code>par</code> is used to run the model and compute the cost.</p></li>
+<li><p><code>obs</code>: A data frame of observations, against which to
+compare the simulation results.</p></li>
+<li><p><code>drivers</code>: A data frame of driver data, used to run
+the simulations.</p></li>
+<li><p>Additional optional arguments can be used, like for example the
+model parameter values that should be fixed across simulations,
+etc.</p></li>
+</ul>
+<p>Since we are calibrating the parameters based on model outputs, the
+cost function runs the P-model and compare its output to observed
+validation data.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="cf">function</span>(par, obs, drivers){</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>  <span class="co"># Your code</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>}</span></code></pre></div>
+<p>In the optimization procedure, the cost function only takes as
+argument the parameters <code>par</code> that are fed to
+<code>calib_sofun()</code> via <code>settings$par</code> (see previous
+sections). Nevertheless, within the cost function we call
+<code>runread_pmodel_f()</code> and this function needs a full set of
+model parameters. Therefore, the parameters that aren’t being calibrated
+must be hard coded inside the cost function (or passed as an argument
+like the <code>rsofun</code> cost functions). In this example, we only
+want to calibrate the soil moisture stress parameters.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="cf">function</span>(par, obs, drivers){</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  </span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="co"># Set values for the list of calibrated and non-calibrated model parameters</span></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  params_modl <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>    <span class="at">kphio              =</span> <span class="fl">0.09423773</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>    <span class="at">kphio_par_a        =</span> <span class="fl">0.0</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>    <span class="at">kphio_par_b        =</span> <span class="dv">25</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>    <span class="at">soilm_thetastar    =</span> par[<span class="dv">1</span>],</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>    <span class="at">soilm_betao        =</span> par[<span class="dv">2</span>],</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>    <span class="at">beta_unitcostratio =</span> <span class="fl">146.0</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>    <span class="at">rd_to_vcmax        =</span> <span class="fl">0.014</span>,</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>    <span class="at">tau_acclim         =</span> <span class="fl">30.0</span>,</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>    <span class="at">kc_jmax            =</span> <span class="fl">0.41</span></span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  )</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>  </span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a>  <span class="co"># Run the model</span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>  df <span class="ot">&lt;-</span> <span class="fu">runread_pmodel_f</span>(</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>    drivers,</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>    <span class="at">par =</span> params_modl,</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>    <span class="at">makecheck =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>    <span class="at">parallel =</span> <span class="cn">FALSE</span></span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>  )</span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>  </span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>  <span class="co"># Your code to compute the cost</span></span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>}</span></code></pre></div>
+<p>The following chunk defines the final function. We clean the
+observations and model output and align the data according to site and
+date, to compute the mean absolute error (MAE) on GPP. Finally, the
+function should return a scalar value, in this case the MAE, which we
+want to minimize. Keep in mind that the GenSA optimization will minimize
+the cost, but with the BayesianTools method the cost is always
+maximized.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>cost_mae <span class="ot">&lt;-</span> <span class="cf">function</span>(par, obs, drivers){</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="co"># Set values for the list of calibrated and non-calibrated model parameters</span></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  params_modl <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>    <span class="at">kphio              =</span> <span class="fl">0.09423773</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>    <span class="at">kphio_par_a        =</span> <span class="fl">0.0</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>    <span class="at">kphio_par_b        =</span> <span class="dv">25</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>    <span class="at">soilm_thetastar    =</span> par[<span class="dv">1</span>],</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>    <span class="at">soilm_betao        =</span> par[<span class="dv">2</span>],</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>    <span class="at">beta_unitcostratio =</span> <span class="fl">146.0</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>    <span class="at">rd_to_vcmax        =</span> <span class="fl">0.014</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>    <span class="at">tau_acclim         =</span> <span class="fl">30.0</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>    <span class="at">kc_jmax            =</span> <span class="fl">0.41</span></span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  ) <span class="co"># Set values for the list of calibrated and non-calibrated model parameters</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a>  </span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a>  </span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a>  <span class="co"># Run the model</span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a>  df <span class="ot">&lt;-</span> <span class="fu">runread_pmodel_f</span>(</span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a>    <span class="at">drivers =</span> drivers,</span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a>    <span class="at">par =</span> params_modl,</span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a>    <span class="at">makecheck =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a>    <span class="at">parallel =</span> <span class="cn">FALSE</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>  )</span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a>  </span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a>  <span class="co"># Clean model output to compute cost</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a>  df <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(sitename, data) <span class="sc">%&gt;%</span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a>    tidyr<span class="sc">::</span><span class="fu">unnest</span>(data)</span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a>    </span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a>  <span class="co"># Clean validation data to compute cost</span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a>  obs <span class="ot">&lt;-</span> obs <span class="sc">%&gt;%</span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(sitename, data) <span class="sc">%&gt;%</span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a>    tidyr<span class="sc">::</span><span class="fu">unnest</span>(data) <span class="sc">%&gt;%</span></span>
+<span id="cb6-34"><a href="#cb6-34" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="st">&#39;gpp_obs&#39;</span> <span class="ot">=</span> <span class="st">&#39;gpp&#39;</span>) <span class="co"># rename for later</span></span>
+<span id="cb6-35"><a href="#cb6-35" tabindex="-1"></a>    </span>
+<span id="cb6-36"><a href="#cb6-36" tabindex="-1"></a>  <span class="co"># Left join model output with observations by site and date</span></span>
+<span id="cb6-37"><a href="#cb6-37" tabindex="-1"></a>  df <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(df, obs, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">&#39;sitename&#39;</span>, <span class="st">&#39;date&#39;</span>))</span>
+<span id="cb6-38"><a href="#cb6-38" tabindex="-1"></a>  </span>
+<span id="cb6-39"><a href="#cb6-39" tabindex="-1"></a>  <span class="co"># Compute mean absolute error</span></span>
+<span id="cb6-40"><a href="#cb6-40" tabindex="-1"></a>  cost <span class="ot">&lt;-</span> <span class="fu">mean</span>(<span class="fu">abs</span>(df<span class="sc">$</span>gpp <span class="sc">-</span> df<span class="sc">$</span>gpp_obs), <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-41"><a href="#cb6-41" tabindex="-1"></a>  </span>
+<span id="cb6-42"><a href="#cb6-42" tabindex="-1"></a>  <span class="co"># Return the computed cost</span></span>
+<span id="cb6-43"><a href="#cb6-43" tabindex="-1"></a>  <span class="fu">return</span>(cost)</span>
+<span id="cb6-44"><a href="#cb6-44" tabindex="-1"></a>}</span></code></pre></div>
+<p>As a last step, let’s verify that the calibration procedure runs
+using this cost function.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># Define calibration settings and parameter ranges</span></span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>settings_mae <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">&#39;GenSA&#39;</span>,</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">metric =</span> cost_mae, <span class="co"># our cost function</span></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">control =</span> <span class="fu">list</span>(</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>    <span class="at">maxit =</span> <span class="dv">100</span>),</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">par =</span> <span class="fu">list</span>(</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>    <span class="at">soilm_thetastar =</span> <span class="fu">list</span>(<span class="at">lower=</span><span class="fl">0.0</span>, <span class="at">upper=</span><span class="dv">3000</span>, <span class="at">init=</span><span class="fl">0.6</span><span class="sc">*</span><span class="dv">240</span>),</span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>    <span class="at">soilm_betao =</span> <span class="fu">list</span>(<span class="at">lower=</span><span class="dv">0</span>, <span class="at">upper=</span><span class="dv">1</span>, <span class="at">init=</span><span class="fl">0.2</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>  )</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>)</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="co"># Calibrate the model and optimize the free parameters</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>pars_calib_mae <span class="ot">&lt;-</span> <span class="fu">calib_sofun</span>(</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>  <span class="at">drivers =</span> p_model_drivers,</span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a>  <span class="at">obs =</span> p_model_validation,</span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  <span class="at">settings =</span> settings_mae</span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>)</span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
