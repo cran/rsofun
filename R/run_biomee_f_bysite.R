@@ -1,148 +1,23 @@
-#' R wrapper for SOFUN biomee
+#' Run BiomeE (R wrapper)
 #' 
-#' Call to the biomee Fortran model
+#' Run BiomeE Fortran model on single site.
 #'
 #' @param sitename Site name.
 #' @param params_siml Simulation parameters.
-#' \describe{
-#'   \item{spinup}{A logical value indicating whether this simulation does spin-up.}
-#'   \item{spinupyears}{Number of spin-up years.}
-#'   \item{recycle}{Length of standard recycling period (days).}
-#'   \item{firstyeartrend}{First transient year.}
-#'   \item{nyeartrend}{Number of transient years.}
-#'   \item{outputhourly}{A logical value indicating whether hourly output is
-#'     produced.}
-#'   \item{outputdaily}{A logical value indicating whether daily output is produced.}
-#'   \item{do_U_shaped_mortality}{A logical value indicating whether U-shaped 
-#'     mortality is used.}
-#'   \item{update_annualLAImax}{A logical value indicating whether updating 
-#'     LAImax according to mineral N in soil.}
-#'   \item{do_closedN_run}{A logical value indicating whether doing N closed 
-#'     runs to recover N balance.}
-#'   \item{code_method_photosynth}{String specifying the method of photosynthesis 
-#'     used in the model, either "pmodel" or "gs_leuning".}
-#'   \item{code_method_mortality}{String indicating the type of mortality in the 
-#'     model. One of the following: "dbh" is size-dependent mortality, "const_selfthin" 
-#'     is constant self thinning (in development), "cstarvation" is carbon starvation, and
-#'     "growthrate" is growth rate dependent mortality.}
-#' }
+#' See examples \code{\link{biomee_gs_leuning_drivers}} or \code{\link{biomee_p_model_drivers}}
 #' @param site_info Site meta info in a data.frame.
-#' \describe{
-#'   \item{sitename}{Name of the site.}
-#'   \item{lon}{Longitud of the site location.}
-#'   \item{lat}{Latitude of the site location.}
-#'   \item{elv}{Elevation of the site location, in meters.}
-#' }
+#' See examples \code{\link{biomee_gs_leuning_drivers}} or \code{\link{biomee_p_model_drivers}}
 #' @param forcing Forcing data.frame used as input.
-#' @param params_tile Tile-level model parameters, into a single row data.frame
-#'   with columns:
-#' \describe{
-#'   \item{soiltype}{Integer indicating the type of soil: Sand = 1, LoamySand = 2,
-#'     SandyLoam = 3, SiltLoam = 4, FrittedClay = 5, Loam = 6, Clay = 7.}
-#'   \item{FLDCAP}{Field capacity (vol/vol). Water remaining in a soil after it 
-#'     has been thoroughly saturated and allowed to drain freely.}
-#'   \item{WILTPT}{Wilting point (vol/vol). Water content of a soil at which 
-#'   plants wilt and fail to recover.}
-#'   \item{K1}{Fast soil C decomposition rate (year\eqn{^{-1}}).}
-#'   \item{K2}{Slow soil C decomposition rate (year\eqn{^{-1}}).}
-#'   \item{K_nitrogen}{Mineral Nitrogen turnover rate (year\eqn{^{-1}}).}
-#'   \item{MLmixRatio}{Ratio of C and N returned to litters from microbes.}
-#'   \item{etaN}{N loss rate through runoff (organic and mineral) (year\eqn{^{-1}}).}
-#'   \item{LMAmin}{Minimum LMA, leaf mass per unit area, kg C m\eqn{^{-2}}.}
-#'   \item{fsc_fine}{Fraction of fast turnover carbon in fine biomass.}
-#'   \item{fsc_wood}{Fraction of fast turnover carbon in wood biomass.}
-#'   \item{GR_factor}{Growth respiration factor.}
-#'   \item{l_fract}{Fraction of the carbon retained after leaf drop.}
-#'   \item{retransN}{Retranslocation coefficient of nitrogen.}
-#'   \item{f_initialBSW}{Coefficient for setting up initial sapwood.}
-#'   \item{f_N_add}{Re-fill of N for sapwood.}
-#'   \item{tf_base}{Calibratable scalar for respiration, used to increase LUE
-#'     levels.}
-#'   \item{par_mort}{Canopy mortality parameter.}
-#'   \item{par_mort_under}{Parameter for understory mortality.}
-#' }
+#' See examples \code{\link{biomee_gs_leuning_drivers}} or \code{\link{biomee_p_model_drivers}}
+#' @param params_tile Tile-level model parameters, into a single row data.frame.
+#' See examples \code{\link{biomee_gs_leuning_drivers}} or \code{\link{biomee_p_model_drivers}}
 #' @param params_species A data.frame containing species-specific model parameters,
-#'   with one species per row. The columns of this data.frame are:
-#' \describe{
-#'   \item{lifeform}{Integer set to 0 for grasses and 1 for trees.}
-#'   \item{phenotype}{Integer set to 0 for deciduous and 1 for evergreen.}
-#'   \item{pt}{Integer indicating the type of plant according to photosynthesis: 
-#'     0 for C3; 1 for C4}
-#'   \item{alpha_FR}{Fine root turnonver rate (year\eqn{^{-1}}).}
-#'   \item{rho_FR}{Material density of fine roots (kg C m\eqn{^{-3}}).}
-#'   \item{root_r}{Radious of the fine roots, in m.}
-#'   \item{root_zeta}{e-folding parameter of root vertical distribution, in m.}
-#'   \item{Kw_root}{Fine root water conductivity (mol m\eqn{^{-2}}
-#'     s\eqn{^{-1}} MPa\eqn{^{-1}}).}
-#'   \item{leaf_size}{Characteristic leaf size.}
-#'   \item{Vmax}{Max RuBisCo rate, in mol m\eqn{^{-2}} s\eqn{^{-1}}.}
-#'   \item{Vannual}{Annual productivity per unit area at full sun (kg C 
-#'     m\eqn{^{-2}} year\eqn{^{-2}}).}
-#'   \item{wet_leaf_dreg}{Wet leaf photosynthesis down-regulation.}
-#'   \item{m_cond}{Factor of stomatal conductance.}
-#'   \item{alpha_phot}{Photosynthesis efficiency.}
-#'   \item{gamma_L}{Leaf respiration coefficient, in year\eqn{^{-1}}.}
-#'   \item{gamma_LN}{Leaf respiration coefficient per unit N.}
-#'   \item{gamma_SW}{Sapwood respiration rate, in kg C m\eqn{^{-2}} year\eqn{^{-1}}.}
-#'   \item{gamma_FR}{Fine root respiration rate, kg C kg C\eqn{^{-1}} 
-#'     year\eqn{^{-1}}.}
-#'   \item{tc_crit}{Critical temperature triggerng offset of phenology, in Kelvin.}
-#'   \item{tc_crit_on}{Critical temperature triggerng onset of phenology, in Kelvin.}
-#'   \item{gdd_crit}{Critical value of GDD5 for turning ON growth season.}
-#'   \item{betaON}{Critical soil moisture for phenology onset.}
-#'   \item{betaOFF}{Critical soil moisture for phenology offset.}
-#'   \item{seedlingsize}{Initial size of seedlings, in kg C per individual.}
-#'   \item{LNbase}{Basal leaf N per unit area, in kg N m\eqn{^{-2}}.}
-#'   \item{lAImax}{Maximum crown LAI (leaf area index).}
-#'   \item{Nfixrate0}{Reference N fixation rate (kg N kg C\eqn{^{-1}} root).}
-#'   \item{NfixCost0}{Carbon cost of N fixation (kg C kg N\eqn{^{-1}}).}
-#'   \item{phiCSA}{Ratio of sapwood area to leaf area.}
-#'   \item{mortrate_d_c}{Canopy tree mortality rate (year\eqn{^{-1}}).}
-#'   \item{mortrate_d_u}{Understory tree mortality rate (year\eqn{^{-1}}).}
-#'   \item{maturalage}{Age at which trees can reproduce (years).}
-#'   \item{v_seed}{Fraction of G_SF to G_F.}
-#'   \item{fNSmax}{Multiplier for NSNmax as sum of potential bl and br.}
-#'   \item{LMA}{Leaf mass per unit area (kg C m\eqn{^{-2}}).}
-#'   \item{rho_wood}{Wood density (kg C m\eqn{^{-3}}).}
-#'   \item{alphaBM}{Coefficient for allometry (biomass = alphaBM * DBH ** thetaBM).}
-#'   \item{thetaBM}{Coefficient for allometry (biomass = alphaBM * DBH ** thetaBM).}
-#'   \item{kphio}{Quantum yield efficiency \eqn{\varphi_0}, 
-#'    in mol mol\eqn{^{-1}}.}
-#'   \item{phiRL}{Ratio of fine root to leaf area.}
-#'   \item{LAI_light}{Maximum LAI limited by light.}
-#' }
-#' @param params_soil A tibble of soil parameters (one row per soil layer).
-#' \describe{
-#'   \item{type}{A string indicating the type of soil.}
-#'   \item{GMD}{Geometric mean particle diameter (mm).}
-#'   \item{GSD}{Geometric standard deviation of particle size.}
-#'   \item{vwc_sat}{Saturated volumetric soil water content (vol/vol).}
-#'   \item{chb}{Soil texture parameter.}
-#'   \item{psi_sat_ref}{Saturation soil water potential (m).}
-#'   \item{k_sat_ref}{Hydraulic conductivity of saturated soil (kg m\eqn{^{-2}} 
-#'     s\eqn{^{-1}}).}
-#'   \item{alphaSoil}{Vertical changes of soil property, where 1 = no change.}
-#'   \item{heat_capacity_dry}{Heat capacity dry air (J m\eqn{^{-3}} K\eqn{^{-1}}).}
-#' }
+#'   with one species per row. See examples \code{\link{biomee_gs_leuning_drivers}} or \code{\link{biomee_p_model_drivers}}
 #' @param init_cohort A data.frame of initial cohort specifications.
-#' \describe{
-#'   \item{init_cohort_species}{Indicates different species.}
-#'   \item{init_cohort_nindivs}{Initial individual density, in individuals per 
-#'     m\eqn{^{2}}.}
-#'   \item{init_cohort_bsw}{Initial biomass of sapwood, in kg C per individual.}
-#'   \item{init_cohort_bHW}{Initial biomass of heartwood, in kg C per tree.}
-#'   \item{init_cohort_nsc}{Initial non-structural biomass.}
-#' }
+#' See examples \code{\link{biomee_gs_leuning_drivers}} or \code{\link{biomee_p_model_drivers}}
 #' @param init_soil A data.frame of initial soil pools.
-#' \describe{
-#'   \item{init_fast_soil_C}{Initial fast soil carbon, in kg C m\eqn{^{-2}}.}
-#'   \item{init_slow_soil_C}{Initial slow soil carbon, in kg C m\eqn{^{-2}}.}
-#'   \item{init_Nmineral}{Mineral nitrogen pool, in kg N m\eqn{^{-2}}.}
-#'   \item{N_input}{Annual nitrogen input to soil N pool, in kg N m\eqn{^{-2}} 
-#'     year\eqn{^{-1}}.}
-#' }
-#' @param makecheck A logical specifying whether checks are performed to verify 
-#'   forcings.
+#' See examples \code{\link{biomee_gs_leuning_drivers}} or \code{\link{biomee_p_model_drivers}}
+#' @param makecheck Flag specifying whether checks are performed to verify model inputs and parameters.
 #'
 #' @export
 #' @useDynLib rsofun
@@ -251,7 +126,7 @@
 #'       ha\eqn{^{-1}}).}
 #'     \item{DBH12}{Diameter at tile level considering trees with DBH > 12 cm
 #'       (cm).}
-#'     \item{QMD}{Quadratic mean diameter at tile level considering trees with 
+#'     \item{QMD12}{Quadratic mean diameter at tile level considering trees with
 #'       DBH > 12 cm (cm).}
 #'     \item{NPP}{Net primary productivity (kg C m\eqn{^{-2}} yr\eqn{^{-1}}).}
 #'     \item{GPP}{Gross primary productivity (kg C m\eqn{^{-2}} yr\eqn{^{-1}}).}
@@ -366,78 +241,75 @@
 #'  forcing = drivers$forcing[[1]],
 #'  params_tile = drivers$params_tile[[1]],
 #'  params_species = drivers$params_species[[1]],
-#'  params_soil = drivers$params_soil[[1]],
 #'  init_cohort = drivers$init_cohort[[1]],
 #'  init_soil = drivers$init_soil[[1]]
 #' )
 #' }
 
 run_biomee_f_bysite <- function(
-  sitename,
-  params_siml,
-  site_info,
-  forcing,
-  params_tile,
-  params_species,
-  params_soil,
-  init_cohort,
-  init_soil,
-  makecheck = TRUE
-  ){
+    sitename,
+    params_siml,
+    site_info,
+    forcing,
+    params_tile,
+    params_species,
+    init_cohort,
+    init_soil,
+    makecheck = TRUE
+){
   
   # predefine variables for CRAN check compliance
   type <- NULL
   
+  forcing_features <- c(
+    'ppfd',
+    'temp',
+    'vpd',
+    'rain',
+    'wind',
+    'patm',
+    'co2'
+  )
+  
   # select relevant columns of the forcing data
   forcing <- forcing %>%
     select(
-      'year',
-      'doy',
-      'hour',
-      'par',
-      'ppfd',
-      'temp',
-      'temp_soil',
-      'rh',
-      'prec',
-      'wind',
-      'patm',
-      'co2',
-      'swc'
+      any_of(forcing_features)
     )
   
-  params_soil <- params_soil %>%
-    dplyr::select(-type)
-
   runyears <- ifelse(
     params_siml$spinup,
     (params_siml$spinupyears + params_siml$nyeartrend),
     params_siml$nyeartrend)
   
   n_daily  <- params_siml$nyeartrend * 365
-
+  
   # Types of photosynthesis model
-    if (params_siml$method_photosynth == "gs_leuning"){
+  if (params_siml$method_photosynth == "gs_leuning"){
     code_method_photosynth <- 1
+    if (is.null(params_siml$steps_per_day))
+      stop(
+        "Parameter 'steps_per_day' is required."
+      )
   } else if (params_siml$method_photosynth == "pmodel"){
     code_method_photosynth <- 2
-    dt_days <- forcing$doy[2] - forcing$doy[1]
-    dt_hours <- forcing$hour[2] - forcing$hour[1]
-    if (dt_days!=1 && dt_hours != 0){
+    if (is.null(params_siml$steps_per_day))
+      params_siml$steps_per_day <- 1
+    else if (params_siml$steps_per_day > 1){
       stop(
         "run_biomee_f_bysite: time step must be daily 
          for P-model photosynthesis setup."
-        )
-      } 
+      )
+    }
   } else {
     stop(
       paste("run_biomee_f_bysite:
             params_siml$method_photosynth not recognised:",
             params_siml$method_photosynth))
   }
-
-# Types of mortality formulations
-    if (params_siml$method_mortality == "cstarvation"){
+  
+  # Types of mortality formulations
+  if (params_siml$method_mortality == "cstarvation"){
     code_method_mortality <- 1
   } else if (params_siml$method_mortality == "growthrate"){
     code_method_mortality <- 2
@@ -452,62 +324,44 @@ run_biomee_f_bysite <- function(
       paste("run_biomee_f_bysite: params_siml$method_mortality not recognised:",
             params_siml$method_mortality))
   }
-
+  
   # base state, always execute the call
   continue <- TRUE
   
   # validate input
   if (makecheck){
-    
-    # create a loop to loop over a list of variables
-    # to check validity
-    
-    check_vars <- c(
-      "par",
-      "ppfd",
-      "temp",
-      "temp_soil",
-      "rh",
-      "prec",
-      "wind",
-      "patm",
-      "co2",
-      "swc"
-    )
-    
+    # Add input and parameter checks here if applicable.
     data_integrity <- lapply(
-      check_vars,
+      forcing_features,
       function(check_var){
         if (any(is.nanull(forcing[check_var]))){
           warning(
-            sprintf("Error: Missing value in %s for %s",
+            sprintf("Error: Missing forcing %s for site %s",
                     check_var, sitename))
           return(FALSE)
         } else {
           return(TRUE)
         }
       })
-   
-    # only return true if all checked variables are TRUE 
+    
+    # only return true if all checked variables are TRUE
     # suppress warning on coercion of list to single logical
     continue <- suppressWarnings(all(as.vector(data_integrity)))
   }
-
+  
   if (continue) {
-
+    
     ## C wrapper call
-    lm3out <- .Call(
-
+    biomeeout <- .Call(
+      
       'biomee_f_C',
-
+      
       ## Simulation parameters
       spinup                = as.logical(params_siml$spinup),
       spinupyears           = as.integer(params_siml$spinupyears),
       recycle               = as.integer(params_siml$recycle),
       firstyeartrend        = as.integer(params_siml$firstyeartrend),
       nyeartrend            = as.integer(params_siml$nyeartrend),
-      outputhourly          = as.logical(params_siml$outputhourly),
-      outputdaily           = as.logical(params_siml$outputdaily),
       do_U_shaped_mortality = as.logical(params_siml$do_U_shaped_mortality),
       update_annualLAImax   = as.logical(params_siml$update_annualLAImax),
       do_closedN_run        = as.logical(params_siml$do_closedN_run),
@@ -518,7 +372,7 @@ run_biomee_f_bysite <- function(
       longitude             = as.numeric(site_info$lon),
       latitude              = as.numeric(site_info$lat),
       altitude              = as.numeric(site_info$elv),
-
+      
       ## Tile-level parameters
       soiltype     = as.integer(params_tile$soiltype),
       FLDCAP       = as.numeric(params_tile$FLDCAP),
@@ -539,174 +393,202 @@ run_biomee_f_bysite <- function(
       tf_base      = as.numeric(params_tile$tf_base),
       par_mort     = as.numeric(params_tile$par_mort),
       par_mort_under = as.numeric(params_tile$par_mort_under),
-
+      
       ## Species-specific parameters
+      n_params_species = as.integer(nrow(params_species)),
       params_species = as.matrix(params_species),
       
-      ## soil parameters
-      params_soil = as.matrix(params_soil),
-      
       ## initial cohort sizes
+      n_init_cohort = as.integer(nrow(init_cohort)),
       init_cohort = as.matrix(init_cohort),
-
+      
       ## initial soil pools
       init_fast_soil_C = as.numeric(init_soil$init_fast_soil_C),
       init_slow_soil_C = as.numeric(init_soil$init_slow_soil_C),
       init_Nmineral    = as.numeric(init_soil$init_Nmineral),
       N_input          = as.numeric(init_soil$N_input),
       n                = as.integer(nrow(forcing)), # n here is for hourly (forcing is hourly), add n for daily and annual outputs
-      n_daily          = as.integer(n_daily), # n here is for hourly (forcing is hourly), add n for daily and annual outputs
-      n_annual         = as.integer(runyears), # n here is for hourly (forcing is hourly), add n for daily and annual outputs
-      n_annual_cohorts = as.integer(params_siml$nyeartrend), # n here is for hourly (forcing is hourly), add n for daily and annual outputs
-      forcing          = as.matrix(forcing)
-      )
+      n_daily          = as.integer(n_daily), 
+      n_annual         = as.integer(runyears), 
+      n_annual_cohorts = as.integer(params_siml$nyeartrend), # to get cohort outputs after spinup year
+      #n_annual_cohorts = as.integer(runyears), # to get cohort outputs from year 1
+      forcing          = as.matrix(forcing),
+      steps_per_day    = as.integer(params_siml$steps_per_day)
+    )
     
     # If simulation is very long, output gets massive.
-    # E.g., In a 3000 years-simulation 'lm3out' is 11.5 GB.
+    # E.g., In a 3000 years-simulation 'biomeeout' is 11.5 GB.
     # In such cases (here, more than 5 GB), ignore hourly and daily outputs at tile and cohort levels
     size_of_object_gb <- as.numeric(
       gsub(
         pattern = " Gb",
         replacement = "",
         format(
-          utils::object.size(lm3out), 
+          utils::object.size(biomeeout), 
           units = "GB"
-          )
         )
       )
+    )
     
     if (size_of_object_gb >= 5){
       warning(
         sprintf("Warning: Excessive size of output object (%s) for %s. 
                 Hourly and daily outputs at tile and cohort levels are not returned.",
                 format(
-                  utils::object.size(lm3out), 
+                  utils::object.size(biomeeout), 
                   units = "GB"
                 ), 
                 sitename))
     }
     
-    #---- Single level output, one matrix ----
-    # hourly
-    if (size_of_object_gb < 5){
-      output_hourly_tile <- as.data.frame(lm3out[[1]], stringAsFactor = FALSE)
-      colnames(output_hourly_tile) <- c("year", "doy", "hour",
-                                        "rad", "Tair", "Prcp",
-                                        "GPP", "Resp", "Transp",
-                                        "Evap", "Runoff", "Soilwater",
-                                        "wcl", "FLDCAP", "WILTPT")
-    } else {
-      output_hourly_tile <- NA
-    }
-    
     # daily_tile
     if (size_of_object_gb < 5){
-      output_daily_tile <- as.data.frame(lm3out[[2]], stringAsFactor = FALSE)
+      output_daily_tile <- as.data.frame(biomeeout[[1]], stringAsFactor = FALSE)
       colnames(output_daily_tile) <- c(
-        "year", "doy", "Tc",
-        "Prcp", "totWs", "Trsp",
-        "Evap", "Runoff", "ws1",
-        "ws2", "ws3", "LAI",
-        "GPP", "Rauto", "Rh",
-        "NSC", "seedC", "leafC",
-        "rootC", "SW_C", "HW_C",
-        "NSN", "seedN", "leafN",
-        "rootN", "SW_N", "HW_N",
-        "McrbC", "fastSOM", "slowSOM",
-        "McrbN", "fastSoilN", "slowSoilN",
-        "mineralN", "N_uptk")
+        "year", 
+        "doy", 
+        "Tc",
+        "Prcp", 
+        "totWs", 
+        "Trsp",
+        "Evap", 
+        "Runoff", 
+        "ws1",
+        "ws2", 
+        "ws3", 
+        "LAI",
+        "GPP", 
+        "Rauto", 
+        "Rh",
+        "NSC", 
+        "seedC", 
+        "leafC",
+        "rootC", 
+        "SW_C", 
+        "HW_C",
+        "NSN", 
+        "seedN", 
+        "leafN",
+        "rootN", 
+        "SW_N", 
+        "HW_N",
+        "McrbC", 
+        "fastSOM", 
+        "slowSOM",
+        "McrbN", 
+        "fastSoilN", 
+        "slowSoilN",
+        "mineralN", 
+        "N_uptk")
     } else {
       output_daily_tile <- NA
     }
     
     # annual tile
-    output_annual_tile <- as.data.frame(lm3out[[30]], stringAsFactor = FALSE)
-    colnames(output_annual_tile) <- c("year", "CAI", "LAI",
-          "Density", "DBH", "Density12",
-          "DBH12", "QMD", "NPP",
-          "GPP", "Rauto", "Rh",
-          "rain", "SoilWater","Transp",
-          "Evap", "Runoff", "plantC",
-          "soilC", "plantN", "soilN",
-          "totN", "NSC", "SeedC", "leafC",
-          "rootC", "SapwoodC", "WoodC",
-          "NSN", "SeedN", "leafN",
-          "rootN", "SapwoodN", "WoodN",
-          "McrbC", "fastSOM", "SlowSOM",
-          "McrbN", "fastSoilN", "slowSoilN",
-          "mineralN", "N_fxed", "N_uptk",
-          "N_yrMin", "N_P2S", "N_loss",
-          "totseedC", "totseedN", "Seedling_C",
-          "Seedling_N", "MaxAge", "MaxVolume",
-          "MaxDBH", "NPPL", "NPPW",
-          "n_deadtrees", "c_deadtrees", "m_turnover", 
-          "c_turnover_time")
-    
-    #---- Multi-level output, multiple matrices to be combined ----
-    
-    # Convert to non dplyr routine, just a lapply looping over
-    # matrices converting to vector, this is a fixed format
-    # with preset conditions so no additional tidyverse logic
-    # is required for the conversion
-    #
-    # Cohort indices can be formatted using a matrix of the same
-    # dimension as the data, enumerated by column and unraveled
-    # as vector()
-
-    #---- daily cohorts ----
-    if (size_of_object_gb < 5){
-      daily_values <- c(
-        "year","doy","hour",
-        "cID", "PFT", "layer",
-        "density","f_layer", "LAI",
-        "gpp","resp","transp",
-        "NPPleaf","NPProot", "NPPwood", "NSC",
-        "seedC", "leafC", "rootC",
-        "SW_C", "HW_C", "NSN",
-        "seedN", "leafN", "rootN",
-        "SW_N", "HW_N"
-      )
-      output_daily_cohorts <- lapply(1:length(daily_values), function(x){
-        loc <- 2 + x
-        v <- data.frame(
-          as.vector(lm3out[[loc]]),
-          stringsAsFactors = FALSE)
-        names(v) <- daily_values[x]
-        return(v)
-      })
-      
-      output_daily_cohorts <- do.call("cbind", output_daily_cohorts)
-      
-      cohort <- sort(rep(1:ncol(lm3out[[3]]),nrow(lm3out[[3]])))
-      output_daily_cohorts <- cbind(cohort, output_daily_cohorts)
-      
-      # drop rows (cohorts) with no values
-      output_daily_cohorts$year[output_daily_cohorts$year == -9999 |
-                                  output_daily_cohorts$year == 0] <- NA
-      output_daily_cohorts <- 
-        output_daily_cohorts[!is.na(output_daily_cohorts$year),]
-    } else {
-      output_daily_cohorts <- NA
-    }
+    output_annual_tile <- as.data.frame(biomeeout[[2]], stringAsFactor = FALSE)
+    colnames(output_annual_tile) <- c(
+      "year", 
+      "CAI", 
+      "LAI",
+      "Density", 
+      "DBH", 
+      "Density12",
+      "DBH12", 
+      "QMD12",
+      "NPP",
+      "GPP", 
+      "Rauto", 
+      "Rh",
+      "rain", 
+      "SoilWater",
+      "Transp",
+      "Evap", 
+      "Runoff", 
+      "plantC",
+      "soilC", 
+      "plantN", 
+      "soilN",
+      "totN", 
+      "NSC", 
+      "SeedC", 
+      "leafC",
+      "rootC", 
+      "SapwoodC", 
+      "WoodC",
+      "NSN", 
+      "SeedN", 
+      "leafN",
+      "rootN", 
+      "SapwoodN", 
+      "WoodN",
+      "McrbC", 
+      "fastSOM", 
+      "SlowSOM",
+      "McrbN", 
+      "fastSoilN", 
+      "slowSoilN",
+      "mineralN", 
+      "N_fxed", 
+      "N_uptk",
+      "N_yrMin", 
+      "N_P2S", 
+      "N_loss",
+      "totseedC", 
+      "totseedN", 
+      "Seedling_C",
+      "Seedling_N", 
+      "MaxAge", 
+      "MaxVolume",
+      "MaxDBH", 
+      "NPPL", 
+      "NPPW",
+      "n_deadtrees", 
+      "c_deadtrees", 
+      "m_turnover", 
+      "c_turnover_time"
+    )
     
     #--- annual cohorts ----
     annual_values <- c(
-      "year","cID",
-      "PFT","layer","density",
-      "f_layer","dDBH","dbh",
-      "height","age","Acrown",
-      "wood","nsc","NSN","NPPtr",
-      "seed","NPPL","NPPR","NPPW",
-      "GPP_yr","NPP_yr","Rauto",
-      "N_uptk","N_fix","maxLAI",
-      "Volume","n_deadtrees",
-      "c_deadtrees","deathrate"
+      "year",
+      "cID",
+      "PFT",
+      "layer",
+      "density",
+      "flayer",
+      "DBH",
+      "dDBH",
+      "height",
+      "age",
+      "BA",
+      "dBA",
+      "Acrown",
+      "Aleaf",
+      "nsc",
+      "seedC",
+      "leafC",
+      "rootC",
+      "sapwC",
+      "woodC",
+      "nsn",
+      "treeG",
+      "fseed",
+      "fleaf",
+      "froot",
+      "fwood",
+      "GPP",
+      "NPP",
+      "Rauto",
+      "Nupt",
+      "Nfix",
+      "n_deadtrees",
+      "c_deadtrees",
+      "deathrate"
     )
-    
     output_annual_cohorts <- lapply(1:length(annual_values), function(x){
-      loc <- 30 + x
+      loc <- 2 + x
       v <- data.frame(
-        as.vector(lm3out[[loc]]),
+        as.vector(biomeeout[[loc]]),
         stringsAsFactors = FALSE)
       names(v) <- annual_values[x]
       return(v)
@@ -720,24 +602,24 @@ run_biomee_f_bysite <- function(
     
     # drop rows (cohorts) with no values
     output_annual_cohorts$year[output_annual_cohorts$year == -9999 | 
-                           output_annual_cohorts$year == 0] <- NA
+                                 output_annual_cohorts$year == 0] <- NA
     output_annual_cohorts <- 
       output_annual_cohorts[!is.na(output_annual_cohorts$year),]
     
     # format the output in a structured list
     out <- list(
-      output_hourly_tile = output_hourly_tile,
+      # output_hourly_tile = output_hourly_tile,
       output_daily_tile = output_daily_tile,
-      output_daily_cohorts = output_daily_cohorts,
+      # output_daily_cohorts = output_daily_cohorts,
       output_annual_tile = output_annual_tile,
       output_annual_cohorts = output_annual_cohorts)
     
   } else {
     out <- NA
   }
-    
+  
   return(out)
-
+  
 }
 
 .onUnload <- function(libpath) {

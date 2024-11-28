@@ -117,12 +117,12 @@ library(ggplot2)
 #    targets = c('gpp', 'vcmax25')
 #  )
 
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  function(par, obs, drivers){
 #    # Your code
 #  }
 
-## ---- eval = FALSE------------------------------------------------------------
+## ----eval = FALSE-------------------------------------------------------------
 #  function(par, obs, drivers){
 #  
 #    # Set values for the list of calibrated and non-calibrated model parameters

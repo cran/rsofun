@@ -10,7 +10,7 @@
 #' Make sure that
 #' the order of the error terms in \code{par} coincides with the order provided in
 #' the \code{targets} argument.
-#' @param obs A nested data frame of observations, following the structure of \code{biomee_validation_2},
+#' @param obs A nested data frame of observations, following the structure of \code{biomee_validation},
 #' for example.
 #' @param drivers A nested data frame of driver data, for example \code{biomee_gs_leuning_drivers}.
 #' @param targets A character vector indicating the target variables for which the
@@ -36,17 +36,17 @@
 #' cost_likelihood_biomee(
 #'  par = c(3.5, 3.5, 1, 1,    # model params
 #'          0.5),              # err_GPP
-#'  obs = biomee_validation_2,
+#'  obs = biomee_validation,
 #'  drivers = biomee_gs_leuning_drivers,
 #'  targets = c("GPP")
 #' )
 #' }
 
 cost_likelihood_biomee <- function(
-  par,
-  obs,
-  drivers,
-  targets
+    par,
+    obs,
+    drivers,
+    targets
 ){
   
   # predefine variables for CRAN check compliance
@@ -57,7 +57,7 @@ cost_likelihood_biomee <- function(
   drivers$params_species[[1]]$LAI_light[]  <- par[2]
   drivers$params_tile[[1]]$tf_base <- par[3]
   drivers$params_tile[[1]]$par_mort <- par[4]
-
+  
   # run model
   df <- runread_biomee_f(
     drivers,
@@ -103,7 +103,7 @@ cost_likelihood_biomee <- function(
   }) |>
     unlist() |>
     sum()     # sum log-likelihoods
-              
+  
   # trap boundary conditions
   if(is.nan(ll) || is.na(ll) | ll == 0){
     ll <- -Inf

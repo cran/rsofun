@@ -8,18 +8,17 @@
 A tibble of driver data:
 \describe{
   \item{sitename}{A character string containing the site name.}
-  \item{forcing}{A tibble of a time series of forcing climate data, including 
-  the following variables:
+  \item{forcing}{A tibble of a time series of forcing climate data, including
+  the following data:
     \describe{
       \item{date}{Date of the observation in YYYY-MM-DD format.}
       \item{temp}{Daytime average air temperature in \eqn{^\circ}C.}
       \item{vpd}{Daytime average vapour pressure deficit in Pa.}
-      \item{ppfd}{Photosynthetic photon flux density (PPFD) in 
+      \item{ppfd}{Photosynthetic photon flux density (PPFD) in
       mol m\eqn{^{-2}} s\eqn{^{-1}}. If all values are NA, it indicates that
       PPFD should be calculated by the SPLASH model.}
-      \item{netrad}{Net radiation in W m\eqn{^{-2}}. If all values are NA,
-      it indicates that net radiation should be calculated by the SPLASH
-      model.}
+      \item{netrad}{Net radiation in W m\eqn{^{-2}}. This is currently
+      ignored as a model forcing.}
       \item{patm}{Atmospheric pressure in Pa.}
       \item{snow}{Snow in water equivalents mm s\eqn{^{-1}}.}
       \item{rain}{Rain as precipitation in liquid form in mm s\eqn{^{-1}}.}
@@ -32,11 +31,12 @@ A tibble of driver data:
       net radiation are not prescribed.}
       }
   }
-  \item{params_siml}{A tibble of simulation parameters.
+  \item{params_siml}{A tibble of simulation parameters, including
+  the following data:
     \describe{
       \item{spinup}{A logical value indicating whether this simulation does spin-up.}
       \item{spinupyears}{Number of spin-up years.}
-      \item{recycle}{Length of standard recycling period, in days.}
+      \item{recycle}{Length of standard recycling period, in years.}
       \item{outdt}{An integer indicating the output periodicity.}
       \item{ltre}{A logical value, \code{TRUE} if evergreen tree.}
       \item{ltne}{A logical value, \code{TRUE} if evergreen tree and N-fixing.}
@@ -49,6 +49,7 @@ A tibble of driver data:
     }
   }
   \item{site_info}{A tibble containing site meta information.
+This data structure can be freely used for documenting the dataset, but must include at least the following data:
     \describe{
       \item{lon}{Longitude of the site location in degrees east.}
       \item{lat}{Latitude of the site location in degrees north.}
@@ -81,7 +82,9 @@ surfaces for global land areas. International Journal of Climatology 37 (12): 43
 p_model_drivers
 }
 \description{
-Small tests dataset to validate if compiled code
-and optimization routines can run
+Small dataset representing the driver to run the P-model at the FR-Pue site. 
+It can also be used together with daily GPP flux time series data from CH-LAE 
+(\code{\link{p_model_validation}}) to optimize model parameters.
+To optimize model parameters to leaf traits data use the datasets \code{\link{p_model_drivers_vcmax25}} and \code{\link{p_model_validation_vcmax25}}.
 }
 \keyword{datasets}

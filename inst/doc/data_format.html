@@ -13,7 +13,7 @@
 <meta name="author" content="Koen Hufkens, Josefa Arán" />
 
 
-<title>P-model data format</title>
+<title>Data format</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -50,7 +50,7 @@ overflow: visible;
 </style>
 <style type="text/css" data-origin="pandoc">
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -337,55 +337,122 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">P-model data format</h1>
+<h1 class="title toc-ignore">Data format</h1>
 <h4 class="author">Koen Hufkens, Josefa Arán</h4>
 
 
 
+<div id="philosophy" class="section level2">
+<h2>Philosophy</h2>
 <p>Overall, the package uses the {tidyverse} data paradigm (Wickham,
 2017), using nested data frames (tibbles) to store model input and
 output, and validation data. Where possible the package uses a
-consistent ontogeny in terms of variables and data structures used. Each
-site is defined by a site name (sitename), location specific site
-information (site_info), soil characteristics (params_soil), simulation
-parameter settings (params_siml) and environmental forcing data
-(forcing). Sites are grouped by row in a nested tibble.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># call to the included p-model demo data</span></span>
+consistent ontogeny in terms of variables and data structures used.</p>
+</div>
+<div id="drivers-data-inputs" class="section level2">
+<h2>Drivers data (inputs)</h2>
+<p>A drivers object is used as unique input to the models, consisting of
+a list of sites. Each site (i.e. row) contains the following data: -
+<code>sitename</code>: site name - <code>site_info</code>: location
+specific site information (nested tibble) - <code>params_siml</code>:
+simulation parameter settings (nested tibble) - <code>forcing</code>:
+environmental forcing data (nested tibble)</p>
+<p>Each of the provided demo drivers contain only one sample site:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># call to the included p-model demo drivers</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>rsofun<span class="sc">::</span>p_model_drivers</span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 4</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co">#&gt;   sitename params_siml       site_info        forcing              </span></span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;    &lt;list&gt;            &lt;list&gt;           &lt;list&gt;               </span></span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt; 1 FR-Pue   &lt;tibble [1 × 11]&gt; &lt;tibble [1 × 4]&gt; &lt;tibble [2,190 × 13]&gt;</span></span></code></pre></div>
-<p>Here, the forcing data contains environmental variables commonly
-available at fluxnet (reference) or ICOS atmospheric gas exchange
-measurement locations or gathered from various gridded or re-analysis
-sources. Data are provided at a daily time step and for complete
-years.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># detailed look at the forcing data</span></span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>rsofun<span class="sc">::</span>p_model_drivers<span class="sc">$</span>forcing</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt; [[1]]</span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2,190 × 13</span></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt;    date        temp   vpd     ppfd netrad   patm  snow    rain  tmin  tmax fapar</span></span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt;    &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
-<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt;  1 2007-01-01 10.0  183.   1.06e-4   4.17 9.99e4     0 2.55e-5  7.12 13.0  0.605</span></span>
-<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt;  2 2007-01-02  8.42 417.   1.92e-4 -22.2  1.00e5     0 6.94e-6  6.79  9.33 0.603</span></span>
-<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a><span class="co">#&gt;  3 2007-01-03  9.13 566.   1.87e-4 -16.6  1.00e5     0 0        4.21 11.2  0.600</span></span>
-<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a><span class="co">#&gt;  4 2007-01-04 10.1  375.   8.28e-5 -16.8  9.93e4     0 0        3.96 12.2  0.598</span></span>
-<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a><span class="co">#&gt;  5 2007-01-05 10.7  508.   1.83e-4  -6.60 9.94e4     0 0        9.26 11.4  0.596</span></span>
-<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co">#&gt;  6 2007-01-06 13.6  656.   1.88e-4 -11.2  9.95e4     0 0        8.96 15.4  0.596</span></span>
-<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="co">#&gt;  7 2007-01-07 13.7  567.   1.55e-4   7.32 9.93e4     0 0        9.55 15.6  0.597</span></span>
-<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt;  8 2007-01-08 10.7  273.   7.17e-5  -3.00 9.89e4     0 0        7.04 12.0  0.597</span></span>
-<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt;  9 2007-01-09 16.4  682.   1.88e-4   9.94 9.91e4     0 0        9.46 19.0  0.598</span></span>
-<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt; 10 2007-01-10 11.4   26.0  2.77e-5  -6.41 9.94e4     0 0        8.98 12.0  0.598</span></span>
-<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt; # ℹ 2,180 more rows</span></span>
-<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more variables: co2 &lt;dbl&gt;, ccov &lt;dbl&gt;</span></span></code></pre></div>
-<p>To create your own driver data it should be arranged into a tibble
-with the same structure as the example drivers objects. Within {rsofun}
-optional checks are executed to ensure that the required variables are
-present in the used dataset using the ‘check’ argument in the
-runread_pmodel_f() function calls. Throughout the package verbose output
-is provided (if desired) as to evaluate errors or progress when running
-the model on a particular dataset.</p>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="co">#&gt; 1 FR-Pue   &lt;tibble [1 × 11]&gt; &lt;tibble [1 × 4]&gt; &lt;tibble [2,190 × 13]&gt;</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co"># call to the included BiomeE (p-model) demo drivers</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>rsofun<span class="sc">::</span>biomee_p_model_drivers</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 8</span></span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="co">#&gt;   sitename site_info         params_siml params_tile params_species init_cohort</span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;    &lt;list&gt;            &lt;list&gt;      &lt;list&gt;      &lt;list&gt;         &lt;list&gt;     </span></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="co">#&gt; 1 CH-Lae   &lt;tibble [1 × 10]&gt; &lt;tibble&gt;    &lt;tibble&gt;    &lt;tibble&gt;       &lt;tibble&gt;   </span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more variables: init_soil &lt;list&gt;, forcing &lt;list&gt;</span></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="co"># call to the included BiomeE (gs leuning) demo drivers</span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a>rsofun<span class="sc">::</span>biomee_gs_leuning_drivers</span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 8</span></span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="co">#&gt;   sitename site_info         params_siml params_tile params_species init_cohort</span></span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="co">#&gt;   &lt;chr&gt;    &lt;list&gt;            &lt;list&gt;      &lt;list&gt;      &lt;list&gt;         &lt;list&gt;     </span></span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="co">#&gt; 1 CH-Lae   &lt;tibble [1 × 10]&gt; &lt;tibble&gt;    &lt;tibble&gt;    &lt;tibble&gt;       &lt;tibble&gt;   </span></span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more variables: init_soil &lt;list&gt;, forcing &lt;list&gt;</span></span></code></pre></div>
+<p>Nested data structures can be accessed like this:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Accessing the site information for the first site</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>rsofun<span class="sc">::</span>biomee_gs_leuning_drivers<span class="sc">$</span>site_info[[<span class="dv">1</span>]]</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 1 × 10</span></span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="co">#&gt;     lon   lat   elv year_start year_end c4    igbp_land_use</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;      &lt;dbl&gt;    &lt;dbl&gt; &lt;lgl&gt; &lt;chr&gt;        </span></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="co">#&gt; 1  8.36  47.5   700       2004     2014 FALSE Mixed Forests</span></span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a><span class="co">#&gt; # ℹ 3 more variables: plant_functional_type &lt;chr&gt;, date_start &lt;date&gt;,</span></span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a><span class="co">#&gt; #   date_end &lt;date&gt;</span></span></code></pre></div>
+<div id="specific-data-for-each-model" class="section level3">
+<h3>Specific data for each model</h3>
+<p>Each model has its own specificities when it comes to the set of
+simulation parameters and forcing data. Please refer to the
+documentation for each model for an exhaustive list of parameters and
+data required by the model.</p>
+<ul>
+<li>P-model: <code>?run_pmodel_f_bysite</code></li>
+<li>BiomeE: <code>?run_biomee_f_bysite</code></li>
+</ul>
+</div>
+<div id="forcing-data" class="section level3">
+<h3>Forcing data</h3>
+<p>The forcing data contains environmental variables commonly available
+at fluxnet (reference) or ICOS atmospheric gas exchange measurement
+locations or gathered from various gridded or re-analysis sources.
+Forcing data are expected to be sequences of complete years (each
+starting on January 1st and ending on december 31st), where leap days
+are excluded (February 29th should not be present).</p>
+<p>Each model has a specific forcing data resolution: - P-model: daily -
+BiomeE (p-model): daily - BiomeE (gs leuning): hourly</p>
+<p>Forcing data present in the demo drivers can be used as examples:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Detailed look at the forcing data for the P-model</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>rsofun<span class="sc">::</span>p_model_drivers<span class="sc">$</span>forcing[[<span class="dv">1</span>]]</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co">#&gt; # A tibble: 2,190 × 13</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co">#&gt;    date        temp   vpd     ppfd netrad   patm  snow    rain  tmin  tmax fapar</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co">#&gt;    &lt;date&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co">#&gt;  1 2007-01-01 10.0  183.   1.06e-4   4.17 9.99e4     0 2.55e-5  7.12 13.0  0.605</span></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a><span class="co">#&gt;  2 2007-01-02  8.42 417.   1.92e-4 -22.2  1.00e5     0 6.94e-6  6.79  9.33 0.603</span></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co">#&gt;  3 2007-01-03  9.13 566.   1.87e-4 -16.6  1.00e5     0 0        4.21 11.2  0.600</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="co">#&gt;  4 2007-01-04 10.1  375.   8.28e-5 -16.8  9.93e4     0 0        3.96 12.2  0.598</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a><span class="co">#&gt;  5 2007-01-05 10.7  508.   1.83e-4  -6.60 9.94e4     0 0        9.26 11.4  0.596</span></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a><span class="co">#&gt;  6 2007-01-06 13.6  656.   1.88e-4 -11.2  9.95e4     0 0        8.96 15.4  0.596</span></span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="co">#&gt;  7 2007-01-07 13.7  567.   1.55e-4   7.32 9.93e4     0 0        9.55 15.6  0.597</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a><span class="co">#&gt;  8 2007-01-08 10.7  273.   7.17e-5  -3.00 9.89e4     0 0        7.04 12.0  0.597</span></span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a><span class="co">#&gt;  9 2007-01-09 16.4  682.   1.88e-4   9.94 9.91e4     0 0        9.46 19.0  0.598</span></span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a><span class="co">#&gt; 10 2007-01-10 11.4   26.0  2.77e-5  -6.41 9.94e4     0 0        8.98 12.0  0.598</span></span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a><span class="co">#&gt; # ℹ 2,180 more rows</span></span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a><span class="co">#&gt; # ℹ 2 more variables: co2 &lt;dbl&gt;, ccov &lt;dbl&gt;</span></span></code></pre></div>
+</div>
+</div>
+<div id="output-data" class="section level2">
+<h2>Output data</h2>
+<p>The output of the model contains one line per site found in the
+drivers: - <code>sitename</code>: site name - <code>data</code>: output
+data for the site (nested tibble)</p>
+<p>The data structure for the output <code>data</code> is specific for
+each model.</p>
+<div id="p-model" class="section level3">
+<h3>P-model</h3>
+<p>For detailed information about the content of <code>data</code>, see
+<code>?run_pmodel_f_bysite</code>.</p>
+</div>
+<div id="biomee" class="section level3">
+<h3>BiomeE</h3>
+<p><code>data</code> contains the following tables: -
+<code>output_daily_tile</code>: Daily output during the simulated period
+- <code>output_annual_cohorts</code>: Annual output at the cohort level
+during the simulated period - <code>output_annual_tile</code>: Yearly
+output during the spin-up and simulated periods.</p>
+<p>For detailed information about each table, see
+<code>?run_biomee_f_bysite</code>.</p>
+</div>
+</div>
 
 
 

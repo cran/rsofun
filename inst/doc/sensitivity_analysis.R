@@ -100,13 +100,11 @@ par_cal_max <- c(
 #    bsup = par_cal_max,
 #    scale = TRUE)
 
-## ----eval = FALSE, echo = FALSE-----------------------------------------------
-#  # Save Morris sensitivity output because it takes very long to compute
-#  save(morrisOut, file = "files/morrisOut.rda")
-
-## ----eval = TRUE, echo = FALSE------------------------------------------------
-# Load Morris sensitivity output
-load("files/morrisOut.rda")
+## ----simulate_morrisOut, include = FALSE--------------------------------------
+# TODO: get rid of this and always fully run the vignettes
+# fake output since Morris sensitivity isn't run
+# saveRDS(morrisOut, "files/sensitivity_analysis.Rmd__morrisOut.RDS")
+morrisOut <- readRDS("files/sensitivity_analysis.Rmd__morrisOut.RDS")
 
 ## ----eval = TRUE, fig.width=7, fig.height=4-----------------------------------
 # Summarise the morris output
@@ -137,6 +135,7 @@ morrisOut.df |>
 
 
 ## ----eval = FALSE, echo = TRUE------------------------------------------------
+#  # Calibrates kphio, kphio_par_b, kc_jmax - top 3 model params
 #  set.seed(2023)
 #  
 #  # Define calibration settings
@@ -153,73 +152,36 @@ morrisOut.df |>
 #      )),
 #    par = list(
 #      kphio = list(lower = 0.03, upper = 0.15, init = 0.05),
-#      kphio_par_a = list(lower = -0.004, upper = -0.001, init = -0.0025),
+#      #kphio_par_a = list(lower = -0.004, upper = -0.001, init = -0.0025),
 #      kphio_par_b = list(lower = 10, upper = 30, init =25),
+#      kc_jmax = list(lower = 0.2, upper = 0.8, init = 0.41),
 #      err_gpp = list(lower = 0.1, upper = 3, init = 0.8)
 #    )
 #  )
+#  par_fixed <- list(
+#      soilm_thetastar    = 0.6*240,
+#      soilm_betao        = 0.2,
+#      beta_unitcostratio = 146.0,
+#      rd_to_vcmax        = 0.014,
+#      kphio_par_a        = -0.0025,
+#      tau_acclim         = 30.0)
 #  
 #  # Calibrate kphio-related parameters and err_gpp
 #  par_calib <- calib_sofun(
 #    drivers = p_model_drivers,
 #    obs = p_model_validation,
 #    settings = settings_calib,
-#    par_fixed = list(
-#      soilm_thetastar    = 0.6*240,
-#      soilm_betao        = 0.2,
-#      beta_unitcostratio = 146.0,
-#      rd_to_vcmax        = 0.014,
-#      tau_acclim         = 30.0,
-#      kc_jmax            = 0.41),
+#    par_fixed = par_fixed,
 #    targets = "gpp"
 #  )
 #  
 #  # This code takes 15 minutes to run
 
-## ----eval = FALSE, echo = FALSE-----------------------------------------------
-#  # Calibrates kphio, betao, kc_jmax - top 3 model params
-#  set.seed(2023)
-#  
-#  # Define calibration settings
-#  settings_calib <- list(
-#    method = "BayesianTools",
-#    metric = rsofun::cost_likelihood_pmodel,
-#    control = list(
-#      sampler = "DEzs",
-#      settings = list(
-#        burnin = 1500,
-#        iterations = 6000,
-#        nrChains = 3       # number of chains to be sampled
-#      )),
-#    par = list(
-#      kphio = list(lower = 0.03, upper = 0.15, init = 0.05),
-#      soilm_betao = list(lower = 0, upper = 1, init = 0.2),
-#      kc_jmax = list(lower = 0.2, upper = 0.8, init = 0.41),
-#      err_gpp = list(lower = 0.1, upper = 3, init = 0.8)
-#    )
-#  )
-#  
-#  par_calib <- calib_sofun(
-#    drivers = p_model_drivers,
-#    obs = p_model_validation,
-#    settings = settings_calib,
-#    par_fixed = list(
-#      kphio_par_a = -0.0025,
-#      kphio_par_b = 20,
-#      soilm_thetastar    = 0.6*240,
-#      beta_unitcostratio = 146.0,
-#      rd_to_vcmax        = 0.014,
-#      tau_acclim         = 30.0),
-#    targets = "gpp"
-#  )
-
-## ----eval = FALSE, echo = FALSE-----------------------------------------------
-#  # Save calibration output because it takes very long to compute
-#  save(par_calib, file = "files/par_calib.rda")
-
-## ----eval = TRUE, echo = FALSE------------------------------------------------
-# Load calibration output
-load("files/par_calib.rda")
+## ----simulate_par_calib, include = FALSE--------------------------------------
+# TODO: get rid of this and always fully run the vignettes
+# fake output since calibration isn't run
+# saveRDS(par_calib, "files/sensitivity_analysis.Rmd__par_calib.RDS")
+par_calib <- readRDS("files/sensitivity_analysis.Rmd__par_calib.RDS")
 
 ## ----fig.height = 10, fig.width = 7-------------------------------------------
 plot(par_calib$mod)
@@ -229,16 +191,27 @@ plot(par_calib$mod)
 #  plot_acf_mcmc <- function(chains, par_names){
 #    # chains: from the BayesianTools output
 #    n_chains <- length(chains)
+#    n_internal_chains <- length(chains[[1]]$chain)
 #    par(mfrow = c(length(par_names), n_chains))
 #    for(par_name in par_names){
 #      for(i in 1:n_chains){
-#        chains[[i]][, par_name] |>
-#          pacf(main = paste0("Series of ", par_name, " , chain ", i))
+#        stopifnot(n_internal_chains<=3); color = c("blue", "red", "darkgreen")
+#        spacing = 0.5/n_internal_chains
+#        for(j in 1:n_internal_chains){
+#          autocorr_internal_chain <- pacf(getSample(chains[[i]]$chain[[j]])[, par_name], plot = FALSE)
+#          if(j==1){
+#            plot(autocorr_internal_chain, col = color[j],
+#                 main = sprintf("Series of %s , chain (%i)", par_name, i))
+#          } else {
+#            lines(autocorr_internal_chain$lag + spacing*(j-1),
+#                  autocorr_internal_chain$acf,
+#                  col = color[j], type = "h")
+#          }
+#        }
 #      }
 #    }
 #  }
-#  
-#  plot_acf_mcmc(par_calib$mod$chain, c("kphio", "kphio_par_a", "kphio_par_b", "err_gpp"))
+#  plot_acf_mcmc(par_calib$mod, c("kphio", "kc_jmax", "kphio_par_b", "err_gpp"))
 
 ## ----fig.width=5, fig.height=5------------------------------------------------
 correlationPlot(par_calib$mod, thin = 1)   # use all samples, no thinning
@@ -253,9 +226,7 @@ summary(par_calib$mod)
 #  # Evaluation of the uncertainty coming from the model parameters' uncertainty
 #  
 #  # Sample parameter values from the posterior distribution
-#  samples_par <- getSample(par_calib$mod,
-#                               thin = 30,              # get every 30th sample
-#                               whichParameters = 1:4) |>
+#  samples_par <- getSample(par_calib$mod, numSamples = 600) |>
 #    as.data.frame() |>
 #    dplyr::mutate(mcmc_id = 1:n()) |>
 #    tidyr::nest(.by = mcmc_id, .key = "pars")
@@ -263,19 +234,9 @@ summary(par_calib$mod)
 #  run_pmodel <- function(sample_par){
 #    # Function that runs the P-model for a sample of parameters
 #    # and also adds the new observation error
-#  
 #    out <- runread_pmodel_f(
 #      drivers = p_model_drivers,
-#      par =  list(                      # copied from par_fixed above
-#        kphio = sample_par$kphio,
-#        kphio_par_a = sample_par$kphio_par_a,
-#        kphio_par_b = sample_par$kphio_par_b,
-#        soilm_thetastar    = 0.6*240,
-#        soilm_betao        = 0.2,
-#        beta_unitcostratio = 146.0,
-#        rd_to_vcmax        = 0.014,
-#        tau_acclim         = 30.0,
-#        kc_jmax            = 0.41)       # value from posterior
+#      par =  c(par_fixed, sample_par) # err_gpp is also here, but simply ignored
 #    )
 #  
 #    # return modelled GPP and prediction for a new GPP observation
@@ -297,81 +258,137 @@ summary(par_calib$mod)
 #    # compute quantiles for each day
 #    dplyr::summarise(
 #      gpp_q05 = quantile(gpp, 0.05, na.rm = TRUE),
-#      gpp = quantile(gpp, 0.5, na.rm = TRUE),          # get median
+#      gpp_q50 = quantile(gpp, 0.5, na.rm = TRUE),          # get median
 #      gpp_q95 = quantile(gpp, 0.95, na.rm = TRUE),
 #      gpp_pred_q05 = quantile(gpp_pred, 0.05, na.rm = TRUE),
 #      gpp_pred_q95 = quantile(gpp_pred, 0.95, na.rm = TRUE)
 #    )
 
-## ----eval = FALSE, echo = FALSE-----------------------------------------------
-#  save(pmodel_runs, file = "files/pmodel_runs.rda")
-
-## ----echo = FALSE, eval = TRUE------------------------------------------------
-load("files/pmodel_runs.rda")
+## ----simulate_pmodel_runs, include = FALSE------------------------------------
+# TODO: get rid of this and always fully run the vignettes
+# fake output since calibration isn't run
+# saveRDS(pmodel_runs, "files/sensitivity_analysis.Rmd__pmodel_runs.RDS")
+pmodel_runs <- readRDS("files/sensitivity_analysis.Rmd__pmodel_runs.RDS")
 
 ## ----fig.width=7, fig.height=5------------------------------------------------
 # Plot the credible intervals computed above
 # for the first year only
-plot_gpp_error <- ggplot(data = pmodel_runs |>
-    dplyr::slice(1:365)) +             # Plot only first year
+data_to_plot <- pmodel_runs |>
+  # Plot only first year
+  dplyr::slice(1:365) |>
+  dplyr::left_join(
+    # Merge GPP validation data (first year)
+    p_model_validation$data[[1]][1:365, ] |>
+      dplyr::rename(gpp_obs = gpp),
+    by = "date")
+# TODO: clean below
+# plot_gpp_error <- ggplot(data = data_to_plot) +
+#   # geom_ribbon(
+#   #   aes(ymin = gpp_pred_q05, 
+#   #       ymax = gpp_pred_q95,
+#   #       x = date),
+#   #   fill = 'grey40', alpha = 0.2) +
+#   geom_ribbon(
+#     aes(ymin = gpp_q05, 
+#         ymax = gpp_q95,
+#         x = date),
+#     fill = 'blue', alpha = 0.5) +
+#   geom_ribbon(
+#     aes(ymin = gpp_pred_q05, 
+#         ymax = gpp_pred_q95,
+#         x = date),
+#     fill = 'grey40', alpha = 0.2) +
+#   geom_line(
+#     aes(x = date,
+#         y = gpp_q50),
+#     colour = "grey40",
+#     alpha = 0.8) +
+#   # # Include observations in the plot
+#   geom_point(shape = 3,
+#     aes(x = date,
+#         y = gpp_obs),# color = "Observations"),
+#     alpha = 0.8) +
+#   theme_classic() +
+#   theme(panel.grid.major.y = element_line(),
+#         legend.position = "bottom") +
+#   labs(
+#     x = 'Date',
+#     y = expression(paste("GPP (g C m"^-2, "s"^-1, ")"))
+#   )
+# plot_gpp_error
+
+plot_gpp_error <- ggplot(data = data_to_plot) +
+  geom_ribbon(
+    aes(ymin = gpp_pred_q05,
+        ymax = gpp_pred_q95,
+        x = date,
+        fill = "Model uncertainty")) +
   geom_ribbon(
     aes(ymin = gpp_q05, 
         ymax = gpp_q95,
-        x = date),
-    fill = 'blue', alpha = 0.5) +
-  geom_ribbon(
-    aes(ymin = gpp_pred_q05, 
-        ymax = gpp_pred_q95,
-        x = date),
-    fill = 'grey40', alpha = 0.2) +
+        x = date,
+        fill = "Parameter uncertainty")) +
   geom_line(
-    aes(
-      date,
-      gpp
-    ),
-    colour = "grey40",
-    alpha = 0.8
-  ) +
+    aes(x = date,
+        y = gpp_q50,
+        color = "Predictions")) +
+  # Include observations in the plot
+  geom_point(shape = 3, 
+    aes(x = date,
+        y = gpp_obs,
+        color = "Observations")) +
   theme_classic() +
-  theme(panel.grid.major.y = element_line()) +
+  theme(panel.grid.major.y = element_line(),
+        legend.position = "bottom") +
   labs(
     x = 'Date',
     y = expression(paste("GPP (g C m"^-2, "s"^-1, ")"))
   )
 
-# Define GPP validation data (first year)
-validation_data <- p_model_validation$data[[1]][1:365, ]
+t_col <- function(color, percent = 50, name = NULL) {
+  #      color = color name
+  #    percent = % transparency
+  #       name = an optional name for the color
+  
+  ## Get RGB values for named color
+  rgb.val <- col2rgb(color)
+  
+  ## Make new color using input color as base and alpha set by transparency
+  t.col <- rgb(rgb.val[1], rgb.val[2], rgb.val[3],
+               max = 255,
+               alpha = (100 - percent) * 255 / 100,
+               names = name)
+  
+  ## Save the color
+  invisible(t.col)
+}
 
-# Include observations in the plot
-plot_gpp_error +  
-  geom_line(
-    data = validation_data,
-    aes(
-      date,
-      gpp
-    ),
-    alpha = 0.8
-  )
+plot_gpp_error <- plot_gpp_error +  
+  scale_color_manual(name = "",
+                     breaks = c("Observations",
+                                "Predictions",
+                                "Non-calibrated predictions"),
+                     values = c(t_col("black", 10),
+                                t_col("#E69F00", 10),
+                                t_col("#56B4E9", 10))) +
+  scale_fill_manual(name = "",
+                    breaks = c("Model uncertainty",
+                               "Parameter uncertainty"),
+                    values = c(t_col("#E69F00", 60),
+                               t_col("#009E73", 40)))
+plot_gpp_error
+#dir.create("./analysis/paper_results_files2")
 
 ## ----fig.width=7, fig.height=5, echo = FALSE, eval = FALSE--------------------
 #  #
 #  # Plot observed and predicted GPP, with a 95% confidence interval using err_gpp
-#  plot_gpp_error <- ggplot(data = runread_pmodel_f(
-#      drivers = p_model_drivers,
-#      par =  list(
-#        kphio = par_calib$par[1],        # values from posterior
-#        kphio_par_a = par_calib$par[2],
-#        kphio_par_b = par_calib$par[3],
-#        soilm_thetastar    = 0.6*240,    # copied from par_fixed above
-#        soilm_betao        = 0.2,
-#        beta_unitcostratio = 146.0,
-#        rd_to_vcmax        = 0.014,
-#        tau_acclim         = 30.0,
-#        kc_jmax            = 0.41)
-#    ) |>
+#  data_to_plot_MAP <- runread_pmodel_f(drivers = p_model_drivers,
+#                                       par =  c(par_fixed, par_calib$par)) |>
 #      dplyr::select(sitename, data) |>
 #      tidyr::unnest(data) |>
-#      dplyr::slice(1:365)) +             # Plot only first year
+#      dplyr::slice(1:365)
+#  
+#  plot_gpp_error <- ggplot(data = data_to_plot_MAP) +             # Plot only first year
 #    geom_ribbon(
 #      aes(ymin = gpp - 2*par_calib$par[4],
 #          ymax = gpp + 2*par_calib$par[4],
@@ -397,7 +414,7 @@ plot_gpp_error +
 #  
 #  # Include observations in the plot
 #  plot_gpp_error +
-#    geom_line(
+#    geom_point(
 #      data = validation_data,
 #      aes(
 #        date,

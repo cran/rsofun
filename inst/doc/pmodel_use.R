@@ -11,10 +11,6 @@ library(rsofun)
 library(dplyr)
 library(ggplot2)
 
-# fake variable as optimization isn't run
-pars <- list()
-pars$par["kphio"] <- 0.04478049
-
 ## -----------------------------------------------------------------------------
 library(rsofun)
 
@@ -113,6 +109,11 @@ settings <- list(
 #      par_fixed = params_modl[-1]  # fix non-calibrated parameters to previous
 #                                   # values, removing kphio
 #    )
+
+## ----simulate_calibration_run, include = FALSE--------------------------------
+# fake variable as optimization isn't run
+pars <- list()
+pars$par["kphio"] <- 0.03580962
 
 ## -----------------------------------------------------------------------------
 # Update the parameter list with calibrated value

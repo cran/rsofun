@@ -5,7 +5,7 @@ module md_photosynth
   ! (gpp_biomee_pmodel, and gpp_pmodel) use it and interact with different 
   ! model structures.
   !------------------------------------------------------------------------
-  use md_params_core, only: kPo, c_molmass, dummy, eps
+  use md_params_core
 
   implicit none
 
@@ -46,7 +46,6 @@ module md_photosynth
     real :: actnv_unitiabs      ! Metabolic leaf N per unit absorbed light (g N m-2 mol-1)
     ! real :: transp              ! Canopy-level total transpiration rate (g H2O (mol photons)-1)
   end type outtype_pmodel
-
 
   type outtype_chi
     real :: chi                 ! = ci/ca, leaf-internal to ambient CO2 partial pressure, ci/ca (unitless)
@@ -105,14 +104,13 @@ contains
     ! real :: gs_unitiabs         ! stomatal conductance to CO2 (mol CO2 Pa-1 m-2 s-1)
     real :: ci                  ! leaf-internal partial pressure, (Pa)
     real :: chi                 ! = ci/ca, leaf-internal to ambient CO2 partial pressure, ci/ca (unitless)
-    real :: xi = 0              ! relative cost parameter, Eq. 9 in Stocker et al., 2019
     real :: ns                  ! viscosity of H2O at ambient temperatures (Pa s)
     real :: ns25                ! viscosity of H2O at 25 deg C (Pa s)
     real :: ns_star             ! viscosity correction factor (unitless)
     real :: mprime              ! factor in light use model with Jmax limitation
     real :: iwue                ! intrinsic water use efficiency = A / gs = ca - ci = ca ( 1 - chi ) , unitless
     real :: lue                 ! light use efficiency (mol CO2 / mol photon)
-    real :: gpp                 ! gross primary productivity (g CO2 m-2 d-1)
+    ! real :: gpp                 ! gross primary productivity (g CO2 m-2 d-1)
     real :: jmax                ! canopy-level maximum rate of electron transport (XXX)
     real :: jmax25              ! canopy-level maximum rate of electron transport (XXX)
     real :: vcmax               ! canopy-level maximum carboxylation capacity per unit ground area (mol CO2 m-2 s-1)
@@ -134,7 +132,7 @@ contains
     real :: fact_jmaxlim        ! Jmax limitation factor (unitless)
 
     ! local variables for Jmax limitation following Nick Smith's method
-    real :: omega, omega_star, vcmax_unitiabs_star, tcref, jmax_over_vcmax, jmax_prime
+    real :: omega, omega_star, tcref, jmax_over_vcmax, jmax_prime
 
     real, parameter :: theta = 0.85          ! used only for smith19 setup
     real, parameter :: c_cost = 0.05336251   ! used only for smith19 setup
@@ -291,25 +289,18 @@ contains
       vcmax = kphio * ppfd * out_optchi%mjoc
 
     else
+      ! Per default, use method_jmaxlim == "wang17"
+      
+      ! Include effect of Jmax limitation
+      mprime = calc_mprime( out_optchi%mj, kc_jmax )
 
-      ! stop 'PMODEL: select valid method'
+      ! Light use efficiency (gpp per unit absorbed light)
+      lue = kphio * mprime * c_molmass  ! in g CO2 m-2 s-1 / (mol light m-2 s-1)
+      
+      ! Vcmax after accounting for Jmax limitation
+      vcmax = kphio * ppfd * out_optchi%mjoc * mprime / out_optchi%mj
 
     end if
-
-    ! XXX PMODEL_TEST: ok
-    ! print*,'mj ', out_optchi%mj
-
-    ! XXX PMODEL_TEST: ok
-    ! print*,'chi ', chi
-
-    ! XXX PMODEL_TEST: ok
-    ! print*,'mprime ', mprime
-
-    ! XXX PMODEL_TEST: ok
-    ! print*,'lue ', lue
-
-    ! XXX PMODEL_TEST: ok
-    ! print*,'kphio ', kphio
 
     !-----------------------------------------------------------------------
     ! Corrolary preditions (This is prelimirary!)
@@ -326,7 +317,7 @@ contains
     actnv  = vcmax25 * n_v
 
     ! Derive Jmax using again A_J = A_C
-    if (ppfd==0.0) then
+    if (ppfd < eps) then
       fact_jmaxlim = 1.0
       jmax = 0.0
       jmax25 = 0.0
@@ -553,7 +544,7 @@ contains
     real :: vdcg, vacg, vbkg, vsr
 
     ! leaf-internal-to-ambient CO2 partial pressure (ci/ca) ratio
-    xi  = sqrt( ( beta * ( kmm + gammastar ) ) / ( 1.6 * ns_star ) )     ! Eq. 9 in Stocker et al., 2019
+    xi  = sqrt( ( beta * ( kmm + gammastar ) ) / ( 1.6 * ns_star ) )                ! Eq. 9 in Stocker et al., 2019
     chi = gammastar / ca + ( 1.0 - gammastar / ca ) * xi / ( xi + sqrt(vpd) )       ! Eq. 8 in Stocker et al., 2019
     ci  = chi * ca
 
@@ -803,7 +794,7 @@ contains
   end function calc_gammastar
 
 
-  function calc_soilmstress( wcont, thetastar, betao, isgrass ) result( outstress )
+  function calc_soilmstress( wcont, thetastar, betao ) result( outstress )
     !//////////////////////////////////////////////////////////////////
     ! Calculates empirically-derived stress (fractional reduction in light 
     ! use efficiency) as a function of soil moisture
@@ -815,7 +806,6 @@ contains
     real, intent(in) :: wcont                 ! soil water content (mm)
     real, intent(in) :: thetastar             ! threshold of water limitation (mm), previously 0.6 * whc_rootzone
     real, intent(in) :: betao                 ! soil water stress at zero water rootzone water content
-    logical, intent(in), optional :: isgrass  ! vegetation cover information to distinguish sensitivity to low soil moisture
 
     ! local variables
     real :: shape_parameter
@@ -892,7 +882,6 @@ contains
     ! loal parameters
     real, parameter :: apar = 0.1012
     real, parameter :: bpar = 0.0005
-    real, parameter :: tk25 = 298.15 ! 25 deg C in Kelvin
 
     ! local variables
     real :: tk                  ! temperature (Kelvin)
@@ -921,8 +910,6 @@ contains
     !
     ! Ref:      Wang Han et al. (in prep.)
     !-----------------------------------------------------------------------
-    use md_params_core, only: kR           ! Universal gas constant, J/mol/K
-
     ! arguments
     real, intent(in) :: tcleaf
     real, intent(in) :: tcgrowth
@@ -973,8 +960,6 @@ contains
     ! photosynthesis: a reanalysis of data from 36 species, Plant, Cell and Environment, 
     ! 30,1176â1190, 2007.
     !-----------------------------------------------------------------------
-    use md_params_core, only: kR           ! Universal gas constant, J/mol/K
-
     ! arguments
     real, intent(in) :: tcleaf
     real, intent(in) :: tcgrowth
@@ -1021,8 +1006,6 @@ contains
     !
     ! T_ref is 25 deg C (=298.13 K) per default.
     !-----------------------------------------------------------------------
-    use md_params_core, only: kR           ! Universal gas constant, J/mol/K
-
     ! arguments
     real, intent(in) :: tk                 ! temperature (Kelvin)
     real, intent(in) :: dha                ! activation energy (J/mol)
